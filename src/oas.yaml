@@ -1,0 +1,316 @@
+openapi: 3.0.1
+info:
+  version: 1.1.0
+  title: is-enterprise-integration
+  description: API that provides communication between internal enterprise systems.
+  
+servers:
+  - description: Development
+    url: https://apim-shared-it-dev.azure-api.net/is-enterprise-integrations/v1
+  - description: Production
+    url: https://apim-it-prd.azure-api.net/is-enterprise-integrations/v1
+    
+tags:
+  - name: Products
+    
+paths: 
+  /products/{id}/evidences:
+    post:
+      summary: It sends evidences to queue for processing. It returns the id associated with the evidences.
+      tags: 
+        - Products
+      parameters:
+        - in: path
+          name: id
+          description: Product identifier.
+          required: true
+          example: FISC01
+          schema:
+            type: string
+            enum:
+            - FISC01
+            - FISC02
+            - FISC03
+            - FISC04
+            - EDI001
+            - FINA01
+            - DARE01
+            - DARE02
+            - DADF01
+            - DAEC01
+            - DADI01
+            - DADI02
+            - DDR001
+            - VMI001
+            - DRP001
+            - S&OP01
+            - SOUR01
+            - AGEN01
+            - EB2B01
+            - TRFO01
+            
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/Evidence'
+              
+      responses:
+        201:
+          description: The evidence was sent to the processing queue.
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/OkResponse201' 
+        400:
+          description: Bad request. Check the payload you've sent and try again.
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/FailResponse400'
+        401:
+          description: Unauthorized. Check your credentials and try again.
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/FailResponse401'
+                
+  /products/evidences/{id}:
+    get:
+      summary: Get evidence by Id.
+      tags: 
+        - Products
+      parameters:
+        - in: path
+          name: id
+          description: Evidence Id.
+          required: true
+          schema:
+            type: string
+            
+      responses:
+        200:
+          description: It returns the evidence associated with the evidence Id.
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/OkResponse200' 
+        400:
+          description: Bad request. Check the payload you've sent and try again.
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/FailResponse400'
+        401:
+          description: Unauthorized. Check your credentials and try again.
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/FailResponse401'
+                
+  /products/evidences:
+    get:
+      summary: It returns evidences by contract id and period.
+      tags: 
+        - Products
+      parameters:
+        - in: query
+          name: contractId
+          description: The contract id associated with the evidences.
+          required: true
+          schema:
+            type: string
+            format: YYYY-MM-DD
+        - in: query
+          name: initialPeriod
+          description: The date that represents the beginning of the period.
+          required: true
+          schema:
+            type: string
+            format: YYYY-MM-DD
+        - in: query
+          name: endPeriod
+          description: The date that represents the end of the period.
+          required: true
+          schema:
+            type: string
+         
+        
+        
+      responses:
+        200:
+          description: It returns the evidence associated with the contract id and the period informed.
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/OkResponseArray200' 
+        400:
+          description: Bad request. Check the payload you've sent and try again.
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/FailResponse400'
+        401:
+          description: Unauthorized. Check your credentials and try again.
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/FailResponse401'
+          
+components:
+
+#--------------------------------------
+# Reusable operation params
+#--------------------------------------
+  parameters:
+  
+    pageParam:
+      in: query
+      name: page
+      description: For pagination purposes, this param is used to paginate the result. It isn't required but there is a limit of registers returned by this endpoint. It's recommendable to use the pagination to control the rows returned. 
+      required: false
+      schema:
+        type: integer
+    
+    pageSizeParam:
+      in: query
+      name: pageSize
+      description: For pagination purposes, this param is used to set the number of registers that will be returned. The default value is 500 registers.
+      required: false
+      schema:
+        type: integer   
+        
+#--------------------------------------
+# Reusable schemas
+#--------------------------------------
+  schemas:
+  
+    ProductId:
+      properties:
+       productId:
+        type: string
+        description: Product identifier.
+        example: 'FISC01'
+  
+    EvidenceId:
+      properties:
+       id:
+        type: string
+        description: Auto generated Id for the evidence sent to the queue.
+        example: '77df90be-ef29-4618-a055-2abe405f70af'
+        
+    Evidence:
+      description: Model containing products use's evidences.
+      properties:
+        
+        contractId:
+          type: string
+          description: Contract Id
+          example: '12345678'
+          
+        contractor:
+          type: string
+          description: Key value that identifies the contractor in ERP system(e.g. CNPJ, VAT, BONIT, DEVAT).
+          example: '21427197000110'
+          
+        bp:
+          type: string
+          description: Business Partner - Key value that identifies the business partner in ERP system(e.g. CNPJ, VAT, BONIT, DEVAT).
+          example: '32720581000122'
+        
+        docType:
+          type: string
+          description: Document type.
+          
+        measurement:
+          type: integer
+          description: Measurement of use.
+          example: 25
+        
+        measureDate:
+          type: string
+          format: date
+          description: Measurement date.
+          example: '2020-07-22'
+          
+    OkResponse:
+      type: object
+      properties:
+        status:
+          type: string
+          description: Request status.
+          example: 'OK'
+          
+    OkResponseNext:
+      properties:
+        next:
+          type: string
+          description: Path to make the next request in the pagination context. 
+          example: '/products/evidences?contractId=12345678&initialPeriod=2020-07-31&endPeriod=2020-08-31&page=4&pageSize=5'
+
+    OkResponse200:
+      allOf: 
+        - $ref: '#/components/schemas/OkResponse'
+        - type: object
+          properties:
+            data:
+              allOf:
+              - $ref: '#/components/schemas/EvidenceId'
+              - $ref: '#/components/schemas/Evidence'
+              
+    OkResponseArray200:
+      allOf: 
+        - $ref: '#/components/schemas/OkResponse'
+        - type: object
+          properties:
+            data:
+              description: Result data.
+              type: array
+              items:
+                allOf:
+                - $ref: '#/components/schemas/EvidenceId'
+                - $ref: '#/components/schemas/ProductId'
+                - $ref: '#/components/schemas/Evidence'
+        - $ref: '#/components/schemas/OkResponseNext'
+              
+    OkResponse201:
+      allOf: 
+        - $ref: '#/components/schemas/OkResponse'
+        - type: object
+          properties:
+            data:
+              $ref: '#/components/schemas/EvidenceId'
+    
+    FailResponse:
+      type: object
+      properties:
+        statusCode:
+          type: integer
+
+    FailResponse400:
+      allOf: 
+        - $ref: '#/components/schemas/FailResponse'
+        - type: object
+          properties:
+            message:
+              type: string
+              example: Bad request. Check the params or payload you've sent.  
+        
+    FailResponse401:
+      allOf: 
+        - $ref: '#/components/schemas/FailResponse'
+        - type: object
+          properties:
+            message:
+              type: string
+              example: Access denied due to invalid subscription key. Make sure to provide a valid key for an active subscription.
+              
+  securitySchemes:
+    ApiKeyAuth:  
+      type: apiKey
+      in: header 
+      name: Subscription-Key
+      
+security:
+  - ApiKeyAuth: []
